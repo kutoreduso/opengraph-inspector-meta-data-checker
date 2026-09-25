@@ -5,6 +5,8 @@ from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 import requests
 import os
+import socket  # Added for DNS checking
+from urllib.parse import urlparse  # Added for parsing the domain
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -25,25 +27,38 @@ def analyze_url(request):
     try:
         validator(raw_url)
     except ValidationError:
-        return Response({"error": "Invalid URL format. Please enter a real web address (e.g., example.com)."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Invalid URL format. Please enter a real web address."}, status=status.HTTP_400_BAD_REQUEST)
 
+    # 2. DNS Verification (Does the domain actually exist on the internet?)
+    try:
+        domain = urlparse(raw_url).netloc
+        socket.gethostbyname(domain)
+    except socket.gaierror:
+        # If the domain has no IP address, it doesn't exist. Stop here.
+        return Response({"error": f"The website '{domain}' does not exist or is offline."}, status=status.HTTP_404_NOT_FOUND)
+
+    # 3. If it exists, proceed with scraping
     try:
         base_api_url = os.getenv('META_API_URL', 'https://api.microlink.io')
         api_endpoint = f"{base_api_url}?url={raw_url}"
         
         response = requests.get(api_endpoint, timeout=10)
         
-        # 2. Check if the external API actually found the website
         if response.status_code != 200:
-            return Response({"error": "Website not found or could not be reached. Ensure the site is live."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Website found, but could not be scraped. It may be blocking bots."}, status=status.HTTP_400_BAD_REQUEST)
             
         json_data = response.json().get('data', {})
 
+        # Microlink fallback protection: If the title is EXACTLY the domain name and there's no description/image, it's a failed scrape
+        title = json_data.get("title", "")
+        desc = json_data.get("description", "")
+        img = json_data.get("image", {}).get("url", "") if json_data.get("image") else ""
+
         extracted_data = {
             "url": raw_url,
-            "title": json_data.get("title", ""),
-            "description": json_data.get("description", ""),
-            "image": json_data.get("image", {}).get("url", "") if json_data.get("image") else ""
+            "title": title,
+            "description": desc,
+            "image": img
         }
         
         return Response(extracted_data, status=status.HTTP_200_OK)
