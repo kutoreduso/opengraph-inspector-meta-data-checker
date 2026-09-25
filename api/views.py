@@ -8,11 +8,14 @@ import os
 import socket  # Added for DNS checking
 from urllib.parse import urlparse  # Added for parsing the domain
 from dotenv import load_dotenv
-
+from .models import Scan
 load_dotenv()
 
+
 @api_view(['POST'])
+
 def analyze_url(request):
+    Scan.objects.create(url=raw_url)
     raw_url = request.data.get('url', '').strip()
     
     if not raw_url:
@@ -65,3 +68,8 @@ def analyze_url(request):
 
     except requests.exceptions.RequestException:
         return Response({"error": "Failed to connect to the analysis server."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+def recent_scans(request):
+    latest_scan = Scan.objects.order.by('-scanned_at')[:5]
+    data = [{"url": scan.url} for scan in latest_scan]
+    return Response(data, status=status.HTTP_200_OK)
