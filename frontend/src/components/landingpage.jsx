@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import ResultsDashboard from './result';
 
 const LandingPage = () => {
 
     const [url, setUrl] = useState('')
     const [isloading, setisloading] = useState(false);
-    const [result, setResult] = useState(false);
+    const [results, setResult] = useState(false);
     const [error, SetError] = useState(null);
 
     const handleAnalyze = async (e) =>{
@@ -110,6 +111,21 @@ const LandingPage = () => {
             <span className="px-4 py-2 bg-gray-50 text-gray-600 text-sm rounded-full border border-gray-200">vercel.com (1h ago)</span>
           </div>
         </section>
+      {results ? (
+          <ResultsDashboard data={results} />
+        ) : (
+          <>
+            {/* Features Grid */}
+            <section id="about" className="max-w-6xl mx-auto px-4 py-16">
+              {/* ... your 3 columns ... */}
+            </section>
+
+            {/* Recent Scans (Database Proof) */}
+            <section className="max-w-4xl mx-auto px-4 py-12 text-center border-t border-gray-100">
+               {/* ... your recent scans ... */}
+            </section>
+          </>
+        )}
       </main>
 
       {/* Footer */}
@@ -130,7 +146,12 @@ const LandingPage = () => {
 
                     </div>
                 </div>
-            </header> */}
+            </header> */
+                
+            }
+            {/* Render results when they exist, or show features grid if empty */}
+{/* Render results when they exist, or show features grid if empty */}
+
         </>
     )
 }
