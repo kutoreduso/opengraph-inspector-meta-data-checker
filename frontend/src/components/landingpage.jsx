@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const LandingPage = () => {
 
-    const [url, seturl] = useState('')
+    const [url, setUrl] = useState('')
     const [isloading, setisloading] = useState(false);
     const [result, setResult] = useState(false);
     const [error, SetError] = useState(null);
@@ -17,7 +17,7 @@ const LandingPage = () => {
         setResult(null);
     
         try {
-            const response = await axios.post('http://localhost:8000/api/analyze', {
+            const response = await axios.post('http://localhost:8000/api/analyze/', {
                 url: url
             })
 
