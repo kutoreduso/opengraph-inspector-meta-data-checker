@@ -3,11 +3,24 @@ import axios from 'axios';
 import ResultsDashboard from './result';
 
 const LandingPage = () => {
-    const [recentScans, setRecentScans]
-    const [url, setUrl] = useState('')
+    const [recentScans, setRecentScans] = useState([]);
+    const [url, setUrl] = useState('');
     const [isloading, setisloading] = useState(false);
     const [results, setResult] = useState(false);
     const [error, SetError] = useState(null);
+
+    const fetchRecent = async () => {
+      try {
+          const res = await axios.get('https://localhost:8000/api/recent/');
+          setRecentScans(res.data)
+      } catch (err) {
+          console.error("Failed to load recent scans")
+      }
+    }
+
+    useEffect(() => {
+      fetchRecent();
+    }, []);
 
     const handleAnalyze = async (e) =>{
         e.preventDefault();
@@ -105,7 +118,20 @@ const LandingPage = () => {
         <section className="max-w-4xl mx-auto px-4 py-12 text-center border-t border-gray-100">
           <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-6">Recent Live Scans</h4>
           <div className="flex flex-wrap justify-center gap-4">
-           
+           {recentScans.length > 0 ? (
+              recentScans.map((scan, index) => (
+                <button
+                  key={index}
+                  onClick={() => setUrl(scan.url)} // Clicking sets the URL in the search bar
+                  className="px-4 py-2 bg-white border border-gray-200 rounded-full text-sm text-gray-600 shadow-sm hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-colors"
+                >
+                  {/* Extracts just the domain name (e.g., example.com) for a cleaner look */}
+                  {new URL(scan.url).hostname}
+                </button>
+              ))
+            ) : (
+              <span className="text-gray-400 text-sm">No recent scans available.</span>
+            )}
           </div>
         </section>
       {results ? (
