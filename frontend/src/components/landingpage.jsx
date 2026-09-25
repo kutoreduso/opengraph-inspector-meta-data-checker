@@ -3,7 +3,7 @@ import axios from 'axios';
 import ResultsDashboard from './result';
 
 const LandingPage = () => {
-
+    const [recentScans, setRecentScans]
     const [url, setUrl] = useState('')
     const [isloading, setisloading] = useState(false);
     const [results, setResult] = useState(false);
@@ -105,10 +105,7 @@ const LandingPage = () => {
         <section className="max-w-4xl mx-auto px-4 py-12 text-center border-t border-gray-100">
           <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-6">Recent Live Scans</h4>
           <div className="flex flex-wrap justify-center gap-4">
-            {/* These will eventually be mapped from your Django database state */}
-            <span className="px-4 py-2 bg-gray-50 text-gray-600 text-sm rounded-full border border-gray-200">github.com (2m ago)</span>
-            <span className="px-4 py-2 bg-gray-50 text-gray-600 text-sm rounded-full border border-gray-200">stripe.com (15m ago)</span>
-            <span className="px-4 py-2 bg-gray-50 text-gray-600 text-sm rounded-full border border-gray-200">vercel.com (1h ago)</span>
+           
           </div>
         </section>
       {results ? (
