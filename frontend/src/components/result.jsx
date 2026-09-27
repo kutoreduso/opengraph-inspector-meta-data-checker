@@ -18,7 +18,6 @@ const DataRow = ({ label, value, isGood }) => (
 // 2. Main Results Component
 const ResultsDashboard = ({ data }) => {
   const [activeTab, setActiveTab] = useState('SEO');
-  const [previewMode, setPreviewMode] = useState('desktop');
 
   if (!data) return null;
 
@@ -32,25 +31,17 @@ const ResultsDashboard = ({ data }) => {
   const hasSchema = data.schema; 
   const hasAuthor = data.author && data.author.length > 0;
   const hasLanguage = data.language && data.language.length > 0;
-  
-  // New Robots and Sitemap Logic
   const hasRobots = data.robots;
   const hasSitemap = data.sitemap;
 
-  // Performance Mocks
-  const hasViewport = true;
-  const simulatedLoadTime = hasImage ? "1.8s" : "0.8s"; 
-  const isFast = parseFloat(simulatedLoadTime) < 2.5;
-
-  // Calculate Global Health Score (Rebalanced for new checks)
+  // Calculate Global Health Score (Rebalanced to total 100 without Performance points)
   let score = 0;
   if (hasTitle) score += 10;
   if (hasDesc) score += 10;
   if (hasImage) score += 15;
   if (hasSchema) score += 15;
-  if (hasAuthor) score += 10;
-  if (hasLanguage) score += 10;
-  if (hasViewport) score += 10;
+  if (hasAuthor) score += 15;
+  if (hasLanguage) score += 15;
   if (hasRobots) score += 10;
   if (hasSitemap) score += 10;
 
@@ -87,12 +78,6 @@ const ResultsDashboard = ({ data }) => {
       if (!hasAuthor) insights.items.push("Add an Author or Publisher meta tag to establish credibility and source attribution.");
       if (!hasLanguage) insights.items.push("Define the language locale (e.g., <html lang=\"en\">) to ensure the content is served in relevant regional AI overviews.");
     }
-    else if (activeTab === 'Performance') {
-      insights.summary = "Page speed and mobile responsiveness are heavily weighted ranking factors for both traditional search and AI retrieval. Slow sites are often dropped from AI overviews.";
-      
-      if (!hasViewport) insights.items.push("Missing <meta name=\"viewport\"> tag. This site will not render correctly on mobile devices.");
-      if (!isFast) insights.items.push("Estimated load time exceeds 2.5 seconds. Compress your og:image and minify assets to improve Largest Contentful Paint (LCP).");
-    }
     
     if (insights.items.length === 0) insights.items.push("No critical action items required for this category.");
     return insights;
@@ -109,40 +94,15 @@ const ResultsDashboard = ({ data }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         <div>
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-lg text-gray-900">Social Card Preview</h3>
-            <div className="flex bg-gray-100 rounded-lg p-1">
-              <button 
-                onClick={() => setPreviewMode('desktop')} 
-                className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${previewMode === 'desktop' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                Desktop
-              </button>
-              <button 
-                onClick={() => setPreviewMode('mobile')} 
-                className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${previewMode === 'mobile' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                Mobile
-              </button>
-            </div>
-          </div>
-
-          <div className={`transition-all duration-500 ease-in-out mx-auto bg-white shadow-sm ${
-            previewMode === 'mobile' 
-              ? 'max-w-[320px] border-[8px] border-gray-900 rounded-[2.5rem] overflow-hidden shadow-xl ring-4 ring-gray-100' 
-              : 'w-full border border-gray-300 rounded-xl overflow-hidden'
-          }`}>
-            {previewMode === 'mobile' && (
-              <div className="h-6 bg-gray-900 w-full flex justify-center items-center">
-                <div className="w-16 h-4 bg-black rounded-full mb-1"></div>
-              </div>
-            )}
+          <h3 className="font-bold text-lg mb-4 text-gray-900">Social Card Preview</h3>
+          
+          <div className="w-full border border-gray-300 rounded-xl overflow-hidden bg-white shadow-sm">
             {hasImage ? (
               <img src={data.image} alt="OpenGraph Preview" className="w-full h-56 object-cover border-b border-gray-200" />
             ) : (
               <div className="w-full h-56 bg-gray-100 flex flex-col items-center justify-center text-gray-400 font-medium border-b border-gray-200">
                 <span className="text-3xl mb-2">📸</span>
-                No Image
+                No Image Provided
               </div>
             )}
             <div className="p-5 bg-gray-50">
@@ -163,7 +123,7 @@ const ResultsDashboard = ({ data }) => {
           <h3 className="font-bold text-lg mb-4 text-gray-900">Meta Data Analysis</h3>
           
           <div className="flex border-b border-gray-300 mb-4 overflow-x-auto hide-scrollbar">
-            {['SEO', 'AEO', 'GEO', 'Performance'].map(tab => (
+            {['SEO', 'AEO', 'GEO'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -173,7 +133,9 @@ const ResultsDashboard = ({ data }) => {
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                {tab === 'Performance' ? 'Performance (UX)' : tab}
+                {tab === 'SEO' && 'Search (SEO)'}
+                {tab === 'AEO' && 'Answer Engine (AEO)'}
+                {tab === 'GEO' && 'Generative (GEO)'}
               </button>
             ))}
           </div>
@@ -198,12 +160,6 @@ const ResultsDashboard = ({ data }) => {
               <>
                 <DataRow label="Author / Publisher Tag" value={data.author} isGood={hasAuthor} />
                 <DataRow label="Language Locale" value={data.language} isGood={hasLanguage} />
-              </>
-            )}
-            {activeTab === 'Performance' && (
-              <>
-                <DataRow label="Mobile Viewport Meta" value={hasViewport ? "Present" : "Missing"} isGood={hasViewport} />
-                <DataRow label="Estimated Load Time" value={simulatedLoadTime} isGood={isFast} />
               </>
             )}
           </div>
