@@ -56,10 +56,14 @@ def analyze_url(request):
             "url": raw_url,
             "title": json_data.get("title", ""),
             "description": json_data.get("description", ""),
-            "image": json_data.get("image", {}).get("url", "") if json_data.get("image") else ""
+            "image": json_data.get("image", {}).get("url", "") if json_data.get("image") else "",
+            # NEW: Extracting real AEO & GEO signals from the API
+            "author": json_data.get("author", "") or json_data.get("publisher", ""),
+            "language": json_data.get("lang", ""),
+            "schema": True if json_data.get("logo") or json_data.get("publisher") else False
         }
         
-        # 5. Save to database ONLY after it passes all checks
+        # Save valid scans to SQLite
         Scan.objects.create(url=raw_url)
         
         return Response(extracted_data, status=status.HTTP_200_OK)

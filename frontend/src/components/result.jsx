@@ -20,21 +20,18 @@ const ResultsDashboard = ({ data }) => {
   const [activeTab, setActiveTab] = useState('SEO');
   if (!data) return null;
 
-  // Evaluation Logic (Safely handling data from Django)
+  // Real Evaluation Logic reading directly from Django's API response
   const titleLen = data.title ? data.title.length : 0;
   const descLen = data.description ? data.description.length : 0;
   
-  // Basic SEO
   const hasTitle = titleLen > 0;
   const hasDesc = descLen > 0;
   const hasImage = data.image && data.image.length > 0;
+  const hasSchema = data.schema; 
+  const hasAuthor = data.author && data.author.length > 0;
+  const hasLanguage = data.language && data.language.length > 0;
   
-  // AEO & GEO (Mocking these until you update Django to scrape them)
-  const hasSchema = data.schema !== undefined ? data.schema : false; // JSON-LD
-  const hasAuthor = data.author !== undefined ? data.author : false;
-  const hasLanguage = data.language !== undefined ? data.language : false;
-  
-  // Calculate Global Health Score
+  // Calculate Global Health Score based on real API data
   let score = 0;
   if (hasTitle) score += 20;
   if (hasDesc) score += 20;
@@ -42,44 +39,59 @@ const ResultsDashboard = ({ data }) => {
   if (hasSchema) score += 20;
   if (hasAuthor) score += 20;
 
-  let scoreColor = "bg-red-500";
-  if (score > 40) scoreColor = "bg-yellow-500";
-  if (score > 80) scoreColor = "bg-[#00d632]";
+  // Generate Google-Style AI Insights
+  const getInsights = () => {
+    const insights = { summary: "", items: [] };
 
-  // Generate Tab-Specific Suggestions
-  const getSuggestions = () => {
-    const suggestions = [];
     if (activeTab === 'SEO') {
-      if (!hasTitle) suggestions.push("Add a <title> tag to rank on traditional search engines.");
-      else if (titleLen > 60) suggestions.push(`Title (${titleLen} chars) is too long. Keep under 60 chars.`);
-      
-      if (!hasDesc) suggestions.push("Add a <meta name=\"description\"> tag for search results.");
-      if (!hasImage) suggestions.push("Add an og:image for social media previews.");
+      if (!hasTitle || !hasDesc || !hasImage) {
+        insights.summary = "This page is missing foundational search engine tags. Search crawlers will struggle to accurately index this content, and social media platforms will generate blank preview cards.";
+      } else if (titleLen > 60 || descLen > 160) {
+        insights.summary = "The core SEO structure is present, but character limits are currently exceeded. This will likely result in truncated snippets on Google search results pages.";
+      } else {
+        insights.summary = "This page is highly optimized for traditional search engines. Metadata lengths are within ideal parameters for maximum visibility.";
+      }
+
+      if (!hasTitle) insights.items.push("Inject a <title> tag into the <head> to establish the core topic.");
+      else if (titleLen > 60) insights.items.push(`Reduce title length (currently ${titleLen} chars) to under 60 characters to prevent Google truncation.`);
+      if (!hasDesc) insights.items.push("Write a compelling <meta name=\"description\"> to improve search click-through rates.");
+      if (!hasImage) insights.items.push("Specify an og:image to control how the link appears when shared on social platforms.");
     } 
     else if (activeTab === 'AEO') {
-      if (!hasSchema) suggestions.push("Missing JSON-LD Schema. Answer Engines (like Alexa/Siri) need structured data to understand your content.");
-      suggestions.push("Ensure your page includes explicit Q&A formats for AI extraction.");
+      if (!hasSchema) {
+        insights.summary = "Answer Engines (like ChatGPT and Siri) lack the structured data needed to confidently extract direct answers from this page.";
+      } else {
+        insights.summary = "Structured data elements are present, making it easier for Answer Engines to synthesize your content into direct conversational responses.";
+      }
+      
+      if (!hasSchema) insights.items.push("Implement JSON-LD Schema markup to define the specific entities on this page explicitly.");
+      if (!hasTitle) insights.items.push("Ensure your primary heading matches your Title tag to signal clear topical authority to AI crawlers.");
     } 
     else if (activeTab === 'GEO') {
-      if (!hasAuthor) suggestions.push("Missing Author/Publisher tags. Generative Engines prioritize E-E-A-T (Expertise & Trust).");
-      if (!hasLanguage) suggestions.push("Missing Locale/Language tags. AI overviews need context on regional relevance.");
+      if (!hasAuthor || !hasLanguage) {
+        insights.summary = "Generative Engines prioritize E-E-A-T (Experience, Expertise, Authoritativeness, and Trustworthiness). This page is currently missing critical trust and localization signals.";
+      } else {
+        insights.summary = "Trust and localization signals are present, helping Generative AI confidently recommend this source in localized summaries.";
+      }
+
+      if (!hasAuthor) insights.items.push("Add an Author or Publisher meta tag to establish credibility and source attribution.");
+      if (!hasLanguage) insights.items.push("Define the language locale (e.g., <html lang=\"en\">) to ensure the content is served in relevant regional AI overviews.");
     }
     
-    if (suggestions.length === 0) suggestions.push("Looks great! No critical errors in this category.");
-    return suggestions;
+    if (insights.items.length === 0) insights.items.push("No critical action items required for this category.");
+    return insights;
   };
+
+  const insights = getInsights();
 
   return (
     <div className="max-w-7xl mx-auto mt-12 w-full px-4 text-left mb-20">
-      {/* Status Header */}
       <div className="bg-gray-100 p-4 rounded-lg mb-8 text-sm text-gray-700 flex justify-between items-center">
         <div><span className="font-bold text-gray-900">Scanned URL:</span> {data.url}</div>
         <div className="font-bold">Score: <span className={`${score > 80 ? 'text-green-600' : 'text-yellow-600'}`}>{score}/100</span></div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        
-        {/* Column A: Live Social Preview */}
         <div>
           <h3 className="font-bold text-lg mb-4 text-gray-900">Social Card Preview</h3>
           <div className="border border-gray-300 rounded-xl overflow-hidden bg-white shadow-sm">
@@ -105,11 +117,8 @@ const ResultsDashboard = ({ data }) => {
           </div>
         </div>
 
-        {/* Column B: Technical Data & Analysis */}
         <div>
           <h3 className="font-bold text-lg mb-4 text-gray-900">Meta Data Analysis</h3>
-          
-          {/* Tab Navigation */}
           <div className="flex border-b border-gray-300 mb-4">
             {['SEO', 'AEO', 'GEO'].map(tab => (
               <button
@@ -128,7 +137,6 @@ const ResultsDashboard = ({ data }) => {
             ))}
           </div>
 
-          {/* Dynamic Tab Content */}
           <div className="border border-gray-300 rounded-xl bg-white shadow-sm mb-6">
             {activeTab === 'SEO' && (
               <>
@@ -139,33 +147,34 @@ const ResultsDashboard = ({ data }) => {
             )}
             {activeTab === 'AEO' && (
               <>
-                <DataRow label="Structured Data (JSON-LD)" value={data.schema ? "Present" : "Missing"} isGood={hasSchema} />
+                <DataRow label="Structured Data Indicators" value={data.schema ? "Entities Found" : "None Detected"} isGood={hasSchema} />
                 <DataRow label="Clear H1 Hierarchy" value={data.title ? "Matches Title" : "Missing"} isGood={hasTitle} />
               </>
             )}
             {activeTab === 'GEO' && (
               <>
                 <DataRow label="Author / Publisher Tag" value={data.author} isGood={hasAuthor} />
-                <DataRow label="Language Locale (og:locale)" value={data.language} isGood={hasLanguage} />
+                <DataRow label="Language Locale" value={data.language} isGood={hasLanguage} />
               </>
             )}
           </div>
           
-          {/* Dynamic Suggestions Panel */}
-          <div className={`p-5 border rounded-xl shadow-sm bg-gray-50 border-gray-200`}>
-            <h4 className="font-bold text-base mb-3 text-gray-800">
-              {activeTab} Improvements
-            </h4>
-            <ul className="space-y-2">
-              {getSuggestions().map((suggestion, index) => (
-                <li key={index} className="text-sm flex items-start gap-2 text-gray-700">
-                  <span className="mt-0.5">•</span>
-                  <span>{suggestion}</span>
+          <div className="relative overflow-hidden p-6 border rounded-xl shadow-sm bg-gradient-to-br from-[#f8f9fa] to-[#f1f3f4] border-gray-200">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-green-400"></div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-lg">✨</span>
+              <h4 className="font-bold text-base text-gray-900">{activeTab} Overview</h4>
+            </div>
+            <p className="text-sm text-gray-700 mb-5 leading-relaxed">{insights.summary}</p>
+            <ul className="space-y-3">
+              {insights.items.map((item, index) => (
+                <li key={index} className="text-sm flex items-start gap-3 bg-white p-3 rounded-lg border border-gray-200 shadow-sm text-gray-800">
+                  <span className="mt-0.5 text-blue-600 font-bold">→</span>
+                  <span>{item}</span>
                 </li>
               ))}
             </ul>
           </div>
-          
         </div>
       </div>
     </div>
