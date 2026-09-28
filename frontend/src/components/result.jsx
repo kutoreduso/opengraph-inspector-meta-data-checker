@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-// 1. Helper Component for the Data Rows
+// 1. Helper Component for Standard Data Rows
 const DataRow = ({ label, value, isGood }) => (
   <div className="flex justify-between items-center p-4 text-sm border-b border-gray-100 last:border-0">
     <div className="flex-1 truncate mr-4">
@@ -15,7 +15,30 @@ const DataRow = ({ label, value, isGood }) => (
   </div>
 );
 
-// 2. Main Results Component
+// 2. Helper Component for Top Density Keywords (Pills format)
+const KeywordRow = ({ keywords }) => (
+  <div className="flex justify-between items-center p-4 text-sm border-b border-gray-100 last:border-0">
+    <div className="flex-1 mr-4">
+      <span className="font-bold block text-gray-900 mb-1">Top Density Keywords</span>
+      {keywords && keywords.length > 0 ? (
+        <div className="flex gap-2 flex-wrap mt-2">
+          {keywords.map((kw, index) => (
+            <span 
+              key={index} 
+              className="px-3 py-1 bg-gray-100 text-gray-800 border border-gray-200 rounded-md text-xs font-bold uppercase tracking-wider"
+            >
+              {kw}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <span className="text-gray-500">Not enough text to analyze.</span>
+      )}
+    </div>
+  </div>
+);
+
+// 3. Main Results Component
 const ResultsDashboard = ({ data }) => {
   const [activeTab, setActiveTab] = useState('SEO');
 
@@ -27,14 +50,14 @@ const ResultsDashboard = ({ data }) => {
   
   const hasTitle = titleLen > 0;
   const hasDesc = descLen > 0;
-  const hasImage = data.image && data.image.length > 0;
-  const hasSchema = data.schema; 
-  const hasAuthor = data.author && data.author.length > 0;
-  const hasLanguage = data.language && data.language.length > 0;
-  const hasRobots = data.robots;
-  const hasSitemap = data.sitemap;
+  const hasImage = Boolean(data.image && data.image.length > 0);
+  const hasSchema = Boolean(data.schema); 
+  const hasAuthor = Boolean(data.author && data.author.length > 0);
+  const hasLanguage = Boolean(data.language && data.language.length > 0);
+  const hasRobots = Boolean(data.robots);
+  const hasSitemap = Boolean(data.sitemap);
 
-  // Calculate Global Health Score (Rebalanced to total 100 without Performance points)
+  // Calculate Global Health Score
   let score = 0;
   if (hasTitle) score += 10;
   if (hasDesc) score += 10;
@@ -45,7 +68,7 @@ const ResultsDashboard = ({ data }) => {
   if (hasRobots) score += 10;
   if (hasSitemap) score += 10;
 
-  // Generate Google-Style AI Insights
+  // Generate Tab-Specific Insights
   const getInsights = () => {
     const insights = { summary: "", items: [] };
 
@@ -145,6 +168,7 @@ const ResultsDashboard = ({ data }) => {
               <>
                 <DataRow label="Page Title (<title>)" value={data.title} isGood={hasTitle} />
                 <DataRow label="Meta Description" value={data.description} isGood={hasDesc} />
+                <KeywordRow keywords={data.top_keywords} />
                 <DataRow label="OpenGraph Image (og:image)" value={data.image ? "Image Found" : null} isGood={hasImage} />
                 <DataRow label="Robots.txt" value={hasRobots ? "Found at root" : "Not configured"} isGood={hasRobots} />
                 <DataRow label="Sitemap.xml" value={hasSitemap ? "Found at root" : "Not configured"} isGood={hasSitemap} />
@@ -164,22 +188,22 @@ const ResultsDashboard = ({ data }) => {
             )}
           </div>
           
-          <div className="relative overflow-hidden p-6 border rounded-xl shadow-sm bg-gradient-to-br from-[#f8f9fa] to-[#f1f3f4] border-gray-200">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-green-400"></div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-lg">✨</span>
-              <h4 className="font-bold text-base text-gray-900">{activeTab} Overview</h4>
-            </div>
-            <p className="text-sm text-gray-700 mb-5 leading-relaxed">{insights.summary}</p>
-            <ul className="space-y-3">
-              {insights.items.map((item, index) => (
-                <li key={index} className="text-sm flex items-start gap-3 bg-white p-3 rounded-lg border border-gray-200 shadow-sm text-gray-800">
-                  <span className="mt-0.5 text-blue-600 font-bold">→</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+         <div className="relative overflow-hidden p-6 border rounded-xl shadow-sm bg-gradient-to-br from-[#f8f9fa] to-[#f1f3f4] border-gray-200">
+  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-green-400"></div>
+  <div className="flex items-center gap-2.5 mb-3">
+    <img src="/favicon.svg" alt="Logo" className="w-5 h-5 object-contain" />
+    <h4 className="font-bold text-base text-gray-900">{activeTab} Overview</h4>
+  </div>
+  <p className="text-sm text-gray-700 mb-5 leading-relaxed">{insights.summary}</p>
+  <ul className="space-y-3">
+    {insights.items.map((item, index) => (
+      <li key={index} className="text-sm flex items-start gap-3 bg-white p-3 rounded-lg border border-gray-200 shadow-sm text-gray-800">
+        <span className="mt-0.5 text-blue-600 font-bold">→</span>
+        <span>{item}</span>
+      </li>
+    ))}
+  </ul>
+</div>
         </div>
       </div>
     </div>

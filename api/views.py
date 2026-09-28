@@ -9,35 +9,52 @@ import socket
 from urllib.parse import urlparse
 from dotenv import load_dotenv
 
+# --- NEW IMPORTS FOR KEYWORD EXTRACTION ---
+import re
+from collections import Counter
+
 from .models import Scan
 
 load_dotenv()
 
-# --- STRICT FILE VALIDATION HELPER ---
+# --- NEW: ON-PAGE KEYWORD EXTRACTOR ---
+def extract_top_keywords(title, description):
+    # Combine text and convert to lowercase
+    text = f"{title} {description}".lower()
+    
+    # Extract only valid words (3 letters or more)
+    words = re.findall(r'\b[a-z]{3,}\b', text)
+    
+    # Standard English stop words to ignore
+    stop_words = {
+        'and', 'the', 'for', 'with', 'this', 'that', 'you', 'your', 'from', 
+        'are', 'was', 'out', 'all', 'can', 'get', 'how', 'our', 'has', 'have'
+    }
+    
+    # Filter out stop words
+    filtered_words = [w for w in words if w not in stop_words]
+    
+    # Count frequencies and grab the top 4 most common keywords
+    most_common = Counter(filtered_words).most_common(4)
+    
+    # Return just the words as a clean list
+    return [word[0] for word in most_common]
+
+
 def verify_file_exists(url, required_type):
     try:
-        # We use GET to actually read the headers, allowing redirects (e.g., http to https)
         response = requests.get(url, timeout=4, stream=True)
-        
         if response.status_code == 200:
             content_type = response.headers.get('Content-Type', '').lower()
-            
-            # Reject "Soft 404s": If the server returns an HTML webpage, it is a fake success.
             if 'text/html' in content_type:
                 return False
-                
-            # Check if it matches the exact MIME type we expect
             if required_type in content_type:
                 return True
-                
-            # Ultimate Fallback: If the server forgot to set a Content-Type, check the actual text
-            # We only read the first 100 bytes to keep it extremely fast
             first_bytes = next(response.iter_content(chunk_size=100), b'').decode('utf-8', errors='ignore').lower()
             if required_type == 'xml' and ('<?xml' in first_bytes or '<urlset' in first_bytes):
                 return True
             if required_type == 'plain' and ('user-agent:' in first_bytes or 'disallow:' in first_bytes):
                 return True
-                
         return False
     except requests.exceptions.RequestException:
         return False
@@ -67,7 +84,6 @@ def analyze_url(request):
 
     try:
         base_api_url = os.getenv('META_API_URL', 'https://api.microlink.io')
-        
         response = requests.get(base_api_url, params={'url': raw_url}, timeout=12)
         
         if response.status_code != 200:
@@ -79,23 +95,27 @@ def analyze_url(request):
             
         json_data = response.json().get('data', {})
 
-        # --- RUN THE STRICT FILE CHECKS ---
         parsed_url = urlparse(raw_url)
         base_domain = f"{parsed_url.scheme}://{parsed_url.netloc}"
         
         has_robots = verify_file_exists(f"{base_domain}/robots.txt", "plain")
         has_sitemap = verify_file_exists(f"{base_domain}/sitemap.xml", "xml")
 
+        title_text = json_data.get("title", "")
+        desc_text = json_data.get("description", "")
+
         extracted_data = {
             "url": raw_url,
-            "title": json_data.get("title", ""),
-            "description": json_data.get("description", ""),
+            "title": title_text,
+            "description": desc_text,
             "image": json_data.get("image", {}).get("url", "") if json_data.get("image") else "",
             "author": json_data.get("author", "") or json_data.get("publisher", ""),
             "language": json_data.get("lang", ""),
             "schema": True if json_data.get("logo") or json_data.get("publisher") else False,
             "robots": has_robots,     
-            "sitemap": has_sitemap    
+            "sitemap": has_sitemap,
+            # NEW: Run the keyword extraction
+            "top_keywords": extract_top_keywords(title_text, desc_text)
         }
         
         Scan.objects.create(url=raw_url)
